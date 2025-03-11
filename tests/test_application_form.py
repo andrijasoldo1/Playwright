@@ -50,7 +50,7 @@ def test_fill_step3(page):
     """Navigates to Step 3 and fills in personal information."""
 
     
-    url_step3 = ("https://mostar.demo.melon.market/form/application/new/34e0aa24a451410791c134c118783056/6tb-2288c281637e9d1fdfdb/8b4d20d5-93f4-44f8-bec8-a2056c2f2559")  # Update this if needed
+    url_step3 = ("https://mostar.demo.melon.market/form/application/new/34e0aa24a451410791c134c118783056/6tb-2288c281637e9d1fdfdb/8b4d20d5-93f4-44f8-bec8-a2056c2f2559")  
     page.goto(url_step3)
     
     page.wait_for_selector("body", timeout=20000)
@@ -298,7 +298,7 @@ def fill_step3_personal_info(page):
 
     fill_business_phone_number(page, "49", "15234567890")  
 
-    fill_email_fields(page, "test@example.com")
+    fill_email_fields(page, "20@example.com")
 
     fill_rental_details(page, "Own home", "123 Main St", "10001")
 
@@ -330,8 +330,17 @@ def fill_step3_personal_info(page):
     place_of_work="Zurich",  
     contact_person="John Doe",  
     contact_phone="+41 78 123 45 67",  
-    contact_email="johndoe@example.com"  
-)
+    contact_email="20@example.com",
+    post_code_index=2 
+)       
+    fill_credit_check_details(page, file_path="C:/Users/Pc/Pictures/Screenshots/Screenshot 2024-07-04 124108.png")
+
+
+
+    confirm_and_save(page)
+
+    check_all_boxes_and_save(page)
+
 
 
 
@@ -726,8 +735,10 @@ def fill_insurance_details(page, liability_insurance, liability_specify, househo
 def fill_employment_and_income_details(page, education_level, employment_status, gross_income, taxable_income, taxable_assets, 
                                        occupation=None, employment_type=None, start_date=None, employment_relationship=None, 
                                        company_name=None, street=None, post_code=None, place_of_work=None, 
-                                       contact_person=None, contact_phone=None, contact_email=None):
-    """Fills in employment details, income, and assets fields."""
+                                       contact_person=None, contact_phone=None, contact_email=None,
+                                       post_code_index=0):
+    """
+    Fills in employment details, income, and assets fields. """
 
     education_dropdown = page.locator("//div[contains(@class, 'mdt-select') and .//span[contains(text(), 'Highest educational qualification')]]")
     if education_dropdown.count() > 0:
@@ -748,7 +759,7 @@ def fill_employment_and_income_details(page, education_level, employment_status,
             print(f" Selected Employment Status: {employment_status}")
 
     if employment_status == "Full-time (90-100%)":
-        time.sleep(2) 
+        time.sleep(2)
 
         occupation_input = page.locator("//div[contains(@class, 'mdt-input') and .//span[contains(text(), 'Occupation')]]//input").first
         if occupation_input.count() > 0 and occupation:
@@ -793,13 +804,42 @@ def fill_employment_and_income_details(page, education_level, employment_status,
             street_input.fill(street)
             print(f" Entered Street: {street}")
 
-        post_code_input = page.locator("//div[contains(@class, 'mdt-input') and .//span[contains(text(), 'Post code')]]//input").first
-        if post_code_input.count() > 0 and post_code:
-            post_code_input.click()
-            post_code_input.fill(str(post_code))
-            page.wait_for_timeout(200)  
-            page.keyboard.press("Tab")
-            print(f" Entered Post Code: {post_code}")
+        post_code_inputs = page.locator("//div[contains(@class, 'mdt-input') and .//span[contains(text(), 'Post code')]]//input")
+        if post_code and post_code_inputs.count() > post_code_index:
+            post_code_input = post_code_inputs.nth(post_code_index)
+            print(" Post Code input found, entering value using evaluate on element handle...")
+
+            post_code_input.evaluate(
+                """(el, value) => {
+                    el.value = value;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }""", str(post_code)
+            )
+            time.sleep(1)
+            current_value = post_code_input.input_value()
+            print(f" Post Code after evaluate input: {current_value}")
+
+            if current_value != str(post_code):
+                print(" Post Code value did not persist, retrying evaluate...")
+                post_code_input.evaluate(
+                    """(el, value) => {
+                        el.value = value;
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    }""", str(post_code)
+                )
+                time.sleep(1)
+                current_value = post_code_input.input_value()
+                print(f" Post Code after second evaluate input: {current_value}")
+                if current_value != str(post_code):
+                    print(" Failed to set post code.")
+                else:
+                    print(f" Entered Post Code: {post_code}")
+            else:
+                print(f" Entered Post Code: {post_code}")
+        else:
+            print(" Post Code input field not found or invalid index!")
 
         place_of_work_input = page.locator("//div[contains(@class, 'mdt-input') and .//span[contains(text(), 'Place of work')]]//input").first
         if place_of_work_input.count() > 0 and place_of_work:
@@ -842,3 +882,154 @@ def fill_employment_and_income_details(page, education_level, employment_status,
 
     print(" Pausing for 10 seconds to visually confirm selections...")
     time.sleep(10)
+
+
+
+
+
+    
+
+def fill_credit_check_details(page, file_path):
+    """Selects 'Excerpt from the debt collection register' and uploads the file to all required fields."""
+    
+    credit_check_option = page.locator("//li[contains(@class, 'radio-list-item') and normalize-space(.)='Excerpt from the debt collection register']").first
+    if credit_check_option.count() > 0:
+        credit_check_option.click()
+        print(" Selected Credit Check Type: Excerpt from the debt collection register")
+
+    document_labels = [
+        "Excerpt from the debt collection register",
+        "Copy of ID or passport",
+        "Copy of residence permit",
+        "Tax invoice / withholding tax",
+        "Additional document",
+        "Additional document 2",
+        "Additional document 3"
+    ]
+
+    for label in document_labels:
+        file_input = page.locator(f"//div[contains(@class, 'mdt-file-single') and .//span[contains(text(), '{label}')]]//input[@type='file']").first
+        if file_input.count() > 0:
+            file_input.set_input_files(file_path)
+            print(f" Uploaded file for: {label}")
+        else:
+            print(f" File input not found for: {label} (Skipping)")
+
+    print(" All required files uploaded successfully.")
+    
+
+def confirm_and_save(page):
+    """Checks the agreement checkbox, fills in missing Post Code if needed, clicks Save, deletes a user if marked for removal, and then clicks Save and Next."""
+    
+    agreement_checkbox = page.locator("//input[@id='agreement_references']").first
+    if agreement_checkbox.count() > 0 and not agreement_checkbox.is_checked():
+        agreement_checkbox.check(force=True)
+        print(" Checked agreement confirmation checkbox.")
+    else:
+        print(" Agreement checkbox already checked or not found.")
+    
+    post_code_input = page.locator("//div[contains(@class, 'mdt-input') and .//span[contains(text(), 'Post code')]]//input").first
+    if post_code_input.count() > 0:
+        current_value = post_code_input.input_value()
+        if not current_value.strip():
+            post_code_input.fill("8000")
+            print(" Entered missing Post Code: 8000")
+            time.sleep(2) 
+
+    save_button = page.locator("//div[contains(@class, 'btn-primary') and normalize-space(text())='Save']").first
+    if save_button.count() > 0:
+        save_button.click(force=True)
+        print(" Clicked Save button.")
+    else:
+        print(" Save button not found!")
+    
+    print(" Waiting 10 seconds for Save to complete...")
+    time.sleep(10)
+    
+    
+    person_card = page.locator("div.person-card[section-key='0'][field-key='0'][person-key='0']").first
+    if person_card.count() > 0:
+        try:
+            person_card.hover()
+            print(" Hovered over the person card.")
+            time.sleep(0.5)
+            
+            trash_icon = person_card.locator("div.actions i.fa-regular.fa-trash-can").first
+            if trash_icon.count() > 0:
+                trash_icon.click(force=True)
+                print(" Clicked trash icon within the person card.")
+            else:
+                print(" Trash icon not found within the person card.")
+        except Exception as e:
+            print(" Exception while hovering or clicking trash icon:", e)
+        
+        try:
+            page.wait_for_selector("div.modal-footer", state="visible", timeout=10000)
+            print(" Deletion modal appeared.")
+            delete_button = page.locator("div.modal-footer div.btn.confirm-button.btn-danger", has_text="Delete").first
+            if delete_button.count() > 0:
+                delete_button.click(force=True)
+                print(" Clicked Delete button to confirm deletion.")
+                time.sleep(2)  
+            else:
+                print(" Delete button not found in modal.")
+        except Exception as e:
+            print(" Deletion modal did not appear or failed:", e)
+    else:
+        print(" No person card found; no deletion needed.")
+    
+    
+    save_next_button = page.locator("//div[contains(@class, 'navigation-buttons')]//div[contains(@class, 'btn-next') and normalize-space(text())='Save and next']").first
+    if save_next_button.count() > 0:
+        save_next_button.scroll_into_view_if_needed()
+        save_next_button.click(force=True)
+        print(" Clicked 'Save and Next' button.")
+    else:
+        print(" 'Save and Next' button not found!")
+    
+    print(" Waiting 5 seconds for verification...")
+    time.sleep(15)
+
+
+def check_all_boxes_and_save(page):
+    """Checks the three agreement checkboxes and clicks the Save button."""
+  
+    truth_checkbox = page.locator("input#agreement_truth").first
+    if truth_checkbox.count() > 0:
+        if not truth_checkbox.is_checked():
+            truth_checkbox.check(force=True)
+            print(" Checked 'Truth' checkbox.")
+        else:
+            print(" 'Truth' checkbox already checked.")
+    else:
+        print(" 'Truth' checkbox not found.")
+    
+    privacy_checkbox = page.locator("input#agreement_privacy").first
+    if privacy_checkbox.count() > 0:
+        if not privacy_checkbox.is_checked():
+            privacy_checkbox.check(force=True)
+            print(" Checked 'Privacy' checkbox.")
+        else:
+            print(" 'Privacy' checkbox already checked.")
+    else:
+        print(" 'Privacy' checkbox not found.")
+    
+    penalty_checkbox = page.locator("input#agreement_penalty").first
+    if penalty_checkbox.count() > 0:
+        if not penalty_checkbox.is_checked():
+            penalty_checkbox.check(force=True)
+            print(" Checked 'Penalty' checkbox.")
+        else:
+            print(" 'Penalty' checkbox already checked.")
+    else:
+        print(" 'Penalty' checkbox not found.")
+    
+    
+    save_button = page.locator("div.btn.btn-next", has_text="Save").first
+    if save_button.count() > 0:
+        save_button.click(force=True)
+        print(" Clicked Save button.")
+    else:
+        print(" Save button not found.")
+    
+    time.sleep(7)
