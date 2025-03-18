@@ -1,12 +1,33 @@
 import re
+import os
+import tempfile
+import time
+from faker import Faker
+from dotenv import load_dotenv
 from playwright.sync_api import Playwright, sync_playwright, expect
 
+load_dotenv()
+
+BASE_URL = os.getenv("BASE_URL")
+
+
+
+def generate_fake_file():
+    fake = Faker()
+    temp_dir = tempfile.gettempdir()  
+    file_name = fake.file_name(category="image")  
+    file_path = os.path.join(temp_dir, file_name)  
+
+    with open(file_path, "w") as fake_file:
+        fake_file.write("This is a fake file for testing.")  
+
+    return file_path
 
 def test_run(playwright: Playwright) -> None:
     browser = playwright.chromium.launch(headless=False)
     context = browser.new_context()
     page = context.new_page()
-    page.goto("https://mostar.api.demo.ch.melon.market/")
+    page.goto(os.getenv("BASE_URL"))
     page.get_by_role("link", name="Phasellus").click()
     page.get_by_role("link", name="Maecenas", exact=True).click()
     page.get_by_role("link", name="Donec").click()
@@ -78,7 +99,7 @@ def test_run(playwright: Playwright) -> None:
     page3.locator("div:nth-child(9) > .mt-16 > div > div > .mdt-number-incrementer > .wrapper > #increment").click()
     page3.get_by_role("textbox", name="Please specify").click()
     page3.get_by_role("textbox", name="Please specify").fill("geses")
-    file_path = "D:\\Andrija programer\\Playwrightv2\\Playwright\\tests\\UIzadaca.png"
+    file_path = generate_fake_file()
     page3.on("filechooser", lambda file_chooser: file_chooser.set_files(file_path))
     page3.locator("input[type=\"file\"]").click()
     page3.locator("input[type=\"file\"]").set_input_files(file_path)
@@ -350,6 +371,7 @@ def test_run(playwright: Playwright) -> None:
     page3.get_by_text("Save").click()
 
     # ---------------------
+    os.remove(file_path)
     context.close()
     browser.close()
 
